@@ -5,7 +5,7 @@
 
 # change 'tests => 1' to 'tests => last_test_to_print';
 
-use Test::More tests => 9;
+use Test::More tests => 12;
 BEGIN { use_ok('XML::DOM::XML_Base') };
 
 #########################
@@ -29,6 +29,10 @@ ok( my $dom = $parser->parse( $xml ) );
 ok( my $endo = $dom->getElementsByTagName( 'endo' )->item( 0 ) );
 ok( my $meso = $dom->getElementsByTagName( 'meso' )->item( 0 ) );
 ok( my $ecto = $dom->getElementsByTagName( 'ecto' )->item( 0 ) );
+
+ok( $endo->getBase() eq 'a/b/c/' );
+ok( $meso->getBase() eq 'a/b/' );
+ok( $ecto->getBase() eq 'a/' );
 
 ok( $endo->getAttributeWithBase( 'x' ) eq 'a/b/c/3' );
 ok( $meso->getAttributeWithBase( 'x' ) eq 'a/b/2' );

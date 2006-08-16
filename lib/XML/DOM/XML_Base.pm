@@ -1,6 +1,6 @@
 package XML::DOM::XML_Base;
 use XML::DOM;
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 BEGIN { }
 
@@ -11,6 +11,26 @@ our $scheme_re  = '[a-zA-Z][a-zA-Z0-9.+\-]*';
 
 sub _isAbsolute {
   return shift =~ /^($scheme_re):/so ? 1 : 0
+}
+
+sub getBase {
+  my ( $self ) = @_;
+  my $parent = $self;
+  my $fullbase = '';
+  do {
+    if ( $parent->isa( 'XML::DOM::Element' ) ) {
+      if ( my $base = $parent->getAttribute( 'xml:base' ) ) {
+        $fullbase = $base.$fullbase;
+        # [2] done
+        if ( _isAbsolute( $fullbase ) ) {
+          return $fullbase;
+        }
+      }
+    }
+  } while ( $parent = $parent->getParentNode() );
+  # [3,4] wasn't possible to get an absolute URI, so return the best
+  # relative URI we have
+  return $fullbase;
 }
 
 sub getAttributeWithBase {
@@ -29,23 +49,7 @@ sub getAttributeWithBase {
     return $val;
   }
   else {
-    my $parent = $self;
-    # recursively combine attribute's value with 'xml:base' sibling
-    # attribute's value
-    do {
-      if ( $parent->isa( 'XML::DOM::Element' ) ) {
-        if ( my $base = $parent->getAttribute( 'xml:base' ) ) {
-          $val = $base.$val;
-          # [2] done
-          if ( _isAbsolute( $val ) ) {
-            return $val;
-          }
-        }
-      }
-    } while ( $parent = $parent->getParentNode() );
-    # [3,4] wasn't possible to get an absolute URI, so return the best
-    # relative URI we have
-    return $val;
+    return $self->getBase().$val;
   }
 }
 
@@ -77,6 +81,10 @@ XML::DOM::XML_Base - Apply xml:base to attribute values.
   my $endo = $dom->getElementsByTagName( 'endo' )->item( 0 );
   my $meso = $dom->getElementsByTagName( 'meso' )->item( 0 );
   my $ecto = $dom->getElementsByTagName( 'ecto' )->item( 0 );
+
+  print $endo->getBase()."\n"; # a/b/c/
+  print $meso->getBase()."\n"; # a/b/
+  print $ecto->getBase()."\n"; # a/
 
   print $endo->getAttributeWithBase( 'x' )."\n"; # a/b/c/3
   print $meso->getAttributeWithBase( 'x' )."\n"; # a/b/2
